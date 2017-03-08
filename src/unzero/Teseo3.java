@@ -14,58 +14,74 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-public class Teseo0 implements AgentProgram {
+public class Teseo3 implements AgentProgram {
 
 	private int dx[] = {0,1,0,-1};
 	private int dy[] = {-1,0,1,0};
 	
-	private SimpleLanguage language; 
-	private Vector<String> cmd = new Vector<String>();
-	private Map<Integer,Map<Integer,Short>> map = new HashMap<Integer,Map<Integer,Short>>();
-	
-	private int px = 0;
-	private int py = 0;
-	private int dir = 0;
 	private int time = 0;
+	protected SimpleLanguage language; 
+	protected Vector<String> cmd = new Vector<String>();
+	private Map<Integer,Map<Integer,Short>> map = new HashMap<Integer,Map<Integer,Short>>();
+	int px = 0;
+	int py = 0;
+	int dir = 0;
 	
 	private class Node{
-		LinkedList<String> cmd = new LinkedList<String>();
+		Vector<String> cmd; 
 		int px,py,lvl,prof,dir;
-		
-		public Node(int x,int y,int l,int p,int d){
+		public Node(int x,int y,int l,int c,int d){
+			cmd = new Vector<String>();
 			px = x;
 			py = y;
 			lvl = l;
-			prof = p;
+			prof = c;
 			dir = d;
 		}
 		
+		public Node compare( Node b){
+			if( this.prof < b.prof ){
+				return b;
+			}
+			if( b.prof  < this.prof ){
+				return this;
+			}
+			return (this.lvl > b.lvl)? this : b; 
+		}
+		
 		/**
+		 * Hay que tener cuidado con este metodo dado que esto es, extraño pilas 
+		 * 0 es avanzar en su direccion actual, 1 es avanzar a la derecha
+		 * 2 es avanzar hacia atras y 3 es avanzar hacia izquierdas
 		 * @param i
 		 * @return
 		 */
-		public Node cloneWith(int i){
-			Node ret = new Node(px+dx[i],py+dy[i],lvl+1,-1,(i+dir)%4);
-			ret.cmd = (LinkedList<String>)cmd.clone();
-			for(int j=0;j<i;++j){
+		
+		public Node cloneWith( int i ){
+			Node ret = new Node(px+dx[i],py+dy[i],lvl+1,-1,(dir+i)%4);
+			for(int x=0;x<this.cmd.size();++x){
+				ret.cmd.add(this.cmd.get(x));
+			}
+			for(int x=0;x<i;++x){
 				ret.cmd.add(language.getAction(3));
 			}
 			ret.cmd.add(language.getAction(2));
-			return ret;
-		}
-		
-		
-		public Node compare(Node o){
-			if( this.lvl < o.lvl ){
-				return o;
+			int s = 0;
+			for(int j=0;j<4;++j){
+				int x = ret.px + dx[j];
+				int y = ret.py + dy[j];
+				if( map.get(x) != null && map.get(x).get(y) != null){
+					s++;
+				}
 			}
-			return this;
+			ret.prof = s;
+			return ret;
 		}
 	}
 	
 	
 	
-	public Teseo0(SimpleLanguage lang){
+	public Teseo3(SimpleLanguage lang){
 		language = lang;
 	}
 	
@@ -80,18 +96,25 @@ public class Teseo0 implements AgentProgram {
 	}
 	
 	private int aprox(int x,int y,int i){
-		int[] pb = {4,5,2,5};
-		int r = pb[i];
-		if( map.get(x) != null && map.get(x).get(y) != null){
-			r += map.get(x).get(y)-1;
+		if( new Random().nextDouble() > 0.93 ){
+			return 4;
 		}
-		return r;
+		int[] pb = {4,7,2,7};
+		if( map.get(x) != null && map.get(x).get(y) != null){
+			int r = map.get(x).get(y);
+			for(int k=0;k<4;++k){
+				r -= ( map.get(x+dx[k]) != null && map.get(x+dx[k]).get(y+dy[k]) != null )? 1:0;
+			}
+			return r + pb[i];
+		}
+		return pb[i];
 	}
 	
 	private Action explore(Percept p){
 		if( cmd.size() != 0){
 			String s = cmd.get(0);
 			cmd.remove(0);
+			//System.out.println(s);
 			prepross(s);
 			return new Action(s);
 		}
@@ -100,15 +123,18 @@ public class Teseo0 implements AgentProgram {
 		//Se mueve hacia adelante siempre que puede
 		//TAL VEZ SE PODRIA PONER UNA COLA CON PRIORIDAD PARA QUE SE MUEVA DE ACUERDO A UNA PRIORIDAD, POR EJEMPLO CUANDO TENGAMOS QUE GASTAR
 		//ENERGIA DADO QUE MOVERSE A LA DERECHA ES MEJOR QUE MOVERSE A LA IZQUIERDA
+		short c = 0;
 		for( int i=0;i<4;++i){
 			if( ! (Boolean) p.getAttribute(language.getPercept(i))   ){
-				int l = aprox(px+dx[(i+dir)%4],py+dy[(i+dir)%4],i);
-			    System.out.println(l);
+				int l = aprox(px+dx[i],py+dy[i],i);
+				System.out.println(l);
 				for(int x=0;x<l;++x){
 					pos.add(language.getPercept(i));
 				}
+				c++;
 			}
 		}
+		map.get(px).put(py, c);
 
 		int x = new Random().nextInt(pos.size());
 		if( pos.get(x).equals("front")){
@@ -129,85 +155,92 @@ public class Teseo0 implements AgentProgram {
 
 		String s = cmd.get(0);
 		cmd.remove(0);
+		//System.out.println(s);
 		prepross(s);
 		return new Action(s);
 	}
 	
+	
 	public Action unzero(Percept p){
-		System.out.println("OK");
-		cmd.clear();
-		cmd = NonDFS(p);
+		if( cmd.size() > 0 ){
+			String s = cmd.get(0);
+			cmd.remove(0);
+			return new Action(s);
+		}
+		cmd = dfs(p);
 		String s = cmd.get(0);
 		cmd.remove(0);
-		time = 0;
 		return new Action(s);
 	}
 	
-	public Vector<String> NonDFS(Percept p){
-		
-		Node best = new Node(-1,-1,-1,-1,-1);
-
+	
+	
+	public Vector<String> dfs(Percept p){
 		Map<Integer,Map<Integer,Boolean>> vis = new HashMap<Integer,Map<Integer,Boolean>>();
-		LinkedList<Node> stack = new LinkedList<Node>();
 		int MAX_LEVEL = 10;
+		LinkedList<Node> stack = new LinkedList<Node>();
+		Node best = new Node(-1,-1,-1,-1,-1);
 		stack.add(new Node(px,py,0,0,dir));
-		
-		while( stack.size() > 0 ){
+		stack.getLast().cmd.add(language.getAction(0));
+		vis.put(px, new HashMap<Integer,Boolean>());
+		vis.get(px).put(py,true);
+				
+		while( stack.size() > 0  ){
 			Node nx = stack.removeLast();
-			if( nx.lvl > MAX_LEVEL ){
+			if( nx.lvl >= MAX_LEVEL ){
 				best = best.compare(nx);
-				break;
+				continue;
 			}
 			best = best.compare(nx);
-			for(int k=0;k<4;++k){
-				int i = (k+dir)%2;
+			
+			for(int j=0;j<4;++j){
+				int i = (nx.dir+j)%4;
 				int x = nx.px + dx[i];
 				int y = nx.py + dy[i];
-				boolean reach = map.get(x) != null && map.get(x).get(y) != null;
-				boolean vist = vis.get(x) != null && vis.get(x).get(y) != null;
-				if( reach && !vist ){
-					stack.add(nx.cloneWith(k));
+				if( map.get(x) != null && map.get(x).get(y) != null && vis.get(x) != null && ! vis.get(x).get(y)){
+					if( vis.get(x) == null){
+						vis.put(x,new HashMap<Integer,Boolean>());
+					}
+					if( vis.get(x).get(y) == null){
+						vis.get(x).put(y, true);
+					}
+					stack.add( nx.cloneWith(i) );
 				}
 			}
+			
 		}
-		if( best.cmd.size() == 0){
-			System.out.println("BAD!!");
-			best.cmd.add(language.getAction(0));
+		if( best.cmd.size() > 2){
+			best.cmd.remove(0);
 		}
-		Vector<String> ret = new Vector<String>();
-		for(int x=0;x<best.cmd.size();++x){
-			ret.add(best.cmd.get(x));
-		}
-		return ret;
+		return best.cmd;
 	}
 	
 	
 	
 	
 	
-	public void visit(Percept p){
-		if( map.get(px) == null){
-			map.put(px,new HashMap<Integer,Short>() );
-		}
-		if( map.get(px).get(py) == null ){
-			short r = 0;
-			for(int i=0;i<4;++i){
-				if( !(Boolean)p.getAttribute(language.getPercept(i)) ){
-					r++;
-				}
-			}
-			map.get(px).put(py, r);
-		}
-	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	@Override
 	public Action compute(Percept p) {
+		
 		if((Boolean)p.getAttribute(language.getPercept(4))){
 			return new Action(language.getAction(0));
 		}
+		// TODO Auto-generated method stub
+		map.put(px,new HashMap<Integer,Short>());
 		time++;
-		visit(p);
-		if( time%100 == 0 ){
+//;		System.out.println(new Random().nextDouble());
+		if( (time*new Random().nextDouble())/200 > 0.95 ){
+			System.out.println("KOKONI");
 			return unzero(p);
 		}
 		return explore(p);
