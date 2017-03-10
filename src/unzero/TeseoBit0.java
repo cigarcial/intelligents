@@ -79,7 +79,7 @@ public class TeseoBit0 implements AgentProgram {
 			if ((1 << i & map.get(px).get(py)) != 0) {
 				int k = (i + 4 - dr) % 4;
 				int t = getHeuristic(px + dx[i], py + dy[i], k);
-				System.out.println(t);
+				//System.out.println(t);			
 				for (int x = 0; x < t; ++x) {
 					pos.add(language.getPercept(k));
 				}
@@ -180,6 +180,7 @@ public class TeseoBit0 implements AgentProgram {
 
 	@Override
 	public Action compute(Percept p) {
+		
 		if( initTime == 0){
 			initTime = System.currentTimeMillis();
 		}
@@ -193,8 +194,10 @@ public class TeseoBit0 implements AgentProgram {
 		}
 		time++;
 		if (time % 100 == 0) {
-			time = 0;
-			//MAX_LEVEL++;
+			if( time%500 == 0){
+				MAX_LEVEL++;
+				time = 0;
+			}
 			return searchCentinel(0);
 		}
 		visit(p);
@@ -213,7 +216,7 @@ public class TeseoBit0 implements AgentProgram {
 	// BUSQUEDAS
 
 	public Action searchCentinel(int i) {
-		System.out.println("new search");
+		//System.out.println("new search");
 		if( new Random().nextDouble() < 2 ){
 			cmd = asterisk();
 		}else{
