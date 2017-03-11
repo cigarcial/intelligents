@@ -1,4 +1,4 @@
-package unalcol.agents.examples.labyrinth.teseo.unzero;
+package unalcol.agents.examples.labyrinth.multeseo.eater.CEM;
 
 import unalcol.agents.AgentProgram;
 import unalcol.agents.Percept;

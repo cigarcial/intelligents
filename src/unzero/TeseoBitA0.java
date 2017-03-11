@@ -1,4 +1,4 @@
-package unalcol.agents.examples.labyrinth.teseo.unzero;
+package unalcol.agents.examples.labyrinth.multeseo.eater.CEM;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -16,13 +16,13 @@ public class TeseoBitA0 implements AgentProgram {
 	private long initTime;
 	private long endTime;
 
-	private int MAX_LEVEL = 7;
+	private int MAX_LEVEL = 20;
 	private int[] dx = { 0, 1, 0, -1 };
 	private int[] dy = { 1, 0, -1, 0 };
 	// si pudieramos ir entrenando para que se mueva de acuerdo a donde vaya
 	// encontrando mas posibilidades, uufff
 	// castigo el devolverme, la idea es ir para atras lo menor posible
-	private int[] pb = { 5, 5, 2, 5 };
+	private int[] pb = { 7, 7, 3, 7 };
 	int time = 0;
 
 	private LinkedList<String> cmd;
@@ -55,8 +55,9 @@ public class TeseoBitA0 implements AgentProgram {
 				r++;
 			}
 		}
-		r -= ((1 << 8 & map.get(x).get(y)) != 0) ? 1 : 0;
-		return pb[k] + r;
+		r -= (map.get(x).get(y) >> 24);
+		// r -= ((1 << 8 & map.get(x).get(y)) != 0) ? 1 : 0;
+		return Math.max(1, pb[k] + r);
 	}
 
 	private Action explore() {
@@ -73,11 +74,14 @@ public class TeseoBitA0 implements AgentProgram {
 			boolean cond1 = (1 << i & map.get(px).get(py)) != 0;
 			if (cond1) {
 				int t = heuristic(px + dx[i], py + dy[i], i, k);
-				//System.out.println(t);
+				// System.out.println(t);
 				for (int n = 0; n < t; ++n) {
 					pos.add(k);
 				}
 			}
+		}
+		if (pos.size() == 0) {
+			return new Action(language.getAction(0));
 		}
 		// selecciono un movimiento posible aleatoriamente
 		int idx = new Random().nextInt(pos.size());
@@ -92,18 +96,19 @@ public class TeseoBitA0 implements AgentProgram {
 		initMap(px, py);
 
 		// cuento el numero de veces que he visitado este punto
-		map.get(px).put(py, 1 << 8 | map.get(px).get(py));
-		/*
-		 * int tVisited = Math.min(7, (map.get(px).get(py) >> 24) + 1); int
-		 * timesVisited = (tVisited << 24) | ((map.get(px).get(py) << 8) >> 8);
-		 * map.get(px).put(py, timesVisited);
-		 */
+		// map.get(px).put(py, 1 << 8 | map.get(px).get(py));
+
+		int tVisited = Math.min(4, (map.get(px).get(py) >> 24) + 1);
+		int timesVisited = (tVisited << 24) | ((map.get(px).get(py) << 8) >> 8);
+		map.get(px).put(py, timesVisited);
+		System.out.println(tVisited);
 
 		for (int i = 0; i < 4; ++i) {
 			// posicion relativa de acuerdo a la direccion actual
 			int k = (4 + i - dr) % 4;
-			// puedo avanzar en esa direccion
-			if (!(Boolean) p.getAttribute(language.getPercept(k))) {
+			// puedo avanzar en esa direccion, no hay pared
+			boolean cond1 = !(Boolean) p.getAttribute(language.getPercept(k));
+			if (cond1 ) {
 				int x = px + dx[i];
 				int y = py + dy[i];
 				initMap(x, y);
@@ -151,6 +156,7 @@ public class TeseoBitA0 implements AgentProgram {
 
 	@Override
 	public Action compute(Percept p) {
+
 		if (initTime == 0) {
 			initTime = System.currentTimeMillis();
 		}
@@ -164,10 +170,10 @@ public class TeseoBitA0 implements AgentProgram {
 		}
 		visit(p);
 		time++;
-		if (time % 50 == 0) {
-			if (time % 200 == 0) {
+		if ( time % 40 == 0) {
+			if (time % 120 == 0) {
 				time = 0;
-				MAX_LEVEL += 3;
+				MAX_LEVEL += 2;
 			}
 			return searchCentinel();
 		}
@@ -186,7 +192,7 @@ public class TeseoBitA0 implements AgentProgram {
 	// BUSQUEDAS
 
 	public Action searchCentinel() {
-		// System.out.println("new search");
+		System.out.println("new search");
 		if (new Random().nextDouble() < 2) {
 			cmd = asterisk();
 		}
@@ -280,7 +286,7 @@ public class TeseoBitA0 implements AgentProgram {
 			if (this.profit != o.profit) {
 				return o.profit - this.profit;
 			}
-			return this.cmd.size() - o.cmd.size();
+			return o.lvl - this.lvl;
 		}
 
 		public Node getBetter(Node o) {

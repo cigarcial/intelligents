@@ -1,4 +1,4 @@
-package unalcol.agents.examples.labyrinth.teseo.unzero;
+package unalcol.agents.examples.labyrinth.multeseo.eater.CEM;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -86,8 +86,14 @@ public class TeseoBitA1 implements AgentProgram {
 		for (int i = 0; i < 4; ++i) {
 			// posicion relativa de acuerdo a la direccion actual
 			int k = (4 + i - dr) % 4;
-			// puedo avanzar en esa direccion
-			if (!(Boolean) p.getAttribute(language.getPercept(k))) {
+			// puedo avanzar en esa direccion, no hay pared
+			boolean cond1 = !(Boolean) p.getAttribute(language.getPercept(k));
+			//no hay agente
+			boolean cond2 = !(Boolean) p.getAttribute(language.getPercept(k+6));
+			if( !cond2 ){
+				cmd.clear();
+			}
+			if ( cond1 && cond2 ) {
 				int x = px + dx[i];
 				int y = py + dy[i];
 				initMap(x, y);
