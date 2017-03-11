@@ -169,7 +169,7 @@ public abstract class SimpleTeseoAgentProgram implements AgentProgram {
 			if(MT){
 				cmd.add(language.getAction(0)); // die
 			}
-			if (division(PF, PD, PA, PI, MT, FAIL)) {
+			else if (division(PF, PD, PA, PI, MT, FAIL)) {
 				System.out.println("en division " +x +" "+y);
 				if (!PI) {
 
@@ -208,7 +208,7 @@ public abstract class SimpleTeseoAgentProgram implements AgentProgram {
 					}
 				}
 				if (primerOpcion.size() == 0 && vecesVisitado(x, y) == 0){
-					for (int i = 1; i <= 2; i++) {
+					for (int i = 0; i < 2; i++) {
 						cmd.add(language.getAction(3)); // rotate
 						dr = (dr + 1) % 4;
 					}
@@ -271,17 +271,17 @@ public abstract class SimpleTeseoAgentProgram implements AgentProgram {
 				}
 				else{
 					if (tercerOpcion.size() != 0){
-						/*int cantidad = tercerOpcion.size();
+						int cantidad = tercerOpcion.size();
 						int selec = random.nextInt(cantidad);
 						String giro = tercerOpcion.get(selec);
 						for (int i = 0; i < selecNumGiro(giro); i++) {
 							cmd.add(language.getAction(3)); // rotate
 							dr = (dr + 1) % 4;
-						}*/
-						for (int i = 0; i < 2; i++) {
+						}
+						/*for (int i = 0; i < 2; i++) {
 							cmd.add(language.getAction(3)); // rotate
 							dr = (dr + 1) % 4;
-						}
+						}*/
 					}
 				}
 			}
