@@ -11,7 +11,7 @@ import unalcol.agents.AgentProgram;
 import unalcol.agents.Percept;
 import unalcol.agents.simulate.util.SimpleLanguage;
 
-public class TeseoBitA0 implements AgentProgram {
+public class TeseoBitA2 implements AgentProgram {
 
 	private long initTime;
 	private long endTime;
@@ -37,7 +37,7 @@ public class TeseoBitA0 implements AgentProgram {
 	int py = 0;
 	int dr = 0;
 
-	public TeseoBitA0(SimpleLanguage l) {
+	public TeseoBitA2(SimpleLanguage l) {
 		language = l;
 		cmd = new LinkedList<String>();
 		map = new HashMap<Integer, Map<Integer, Integer>>();
@@ -55,17 +55,16 @@ public class TeseoBitA0 implements AgentProgram {
 				r++;
 			}
 		}
-		return pb[k] + r;
+		r -= (map.get(x).get(y) >> 24);
+		// r -= ((1 << 8 & map.get(x).get(y)) != 0) ? 1 : 0;
+		return Math.max(1, pb[k] + r);
 	}
 
 	private Action explore() {
 		if (cmd.size() > 0) {
 			return nextAction();
 		}
-		LinkedList<Integer>[] pos = new LinkedList[3];
-		for (int n = 0; n < 3; ++n) {
-			pos[n] = new LinkedList<Integer>();
-		}
+		LinkedList<Integer> pos = new LinkedList<Integer>();
 		// por cada posible movimiento valido si me puedo mover y agrego a la
 		// lista de movimientos
 		for (int i = 0; i < 4; ++i) {
@@ -75,28 +74,21 @@ public class TeseoBitA0 implements AgentProgram {
 			boolean cond1 = (1 << i & map.get(px).get(py)) != 0;
 			if (cond1) {
 				int t = heuristic(px + dx[i], py + dy[i], i, k);
-				int v = map.get(px + dx[i]).get(py + dy[i])>>24;
-				int idx = (v < 2) ? v : 2;
+				System.out.println(t);
 				for (int n = 0; n < t; ++n) {
-					pos[idx].add(k);
+					pos.add(k);
 				}
 			}
 		}
-		//no posible action (?)
-		if (pos[2].size() == 0 && pos[1].size() == 0 && pos[0].size() == 0) {
+		if (pos.size() == 0) {
 			return new Action(language.getAction(0));
 		}
 		// selecciono un movimiento posible aleatoriamente
-		for (int m = 0; m < 3; ++m) {
-			if (pos[m].size() > 0) {
-				int idx = new Random().nextInt(pos[m].size());
-				for (int n = 0; n < pos[m].get(idx); ++n) {
-					cmd.add(language.getAction(3));
-				}
-				cmd.add(language.getAction(2));
-				break;
-			}
+		int idx = new Random().nextInt(pos.size());
+		for (int n = 0; n < pos.get(idx); ++n) {
+			cmd.add(language.getAction(3));
 		}
+		cmd.add(language.getAction(2));
 		return nextAction();
 	}
 
@@ -104,17 +96,19 @@ public class TeseoBitA0 implements AgentProgram {
 		initMap(px, py);
 
 		// cuento el numero de veces que he visitado este punto
+		// map.get(px).put(py, 1 << 8 | map.get(px).get(py));
+
 		int tVisited = Math.min(4, (map.get(px).get(py) >> 24) + 1);
 		int timesVisited = (tVisited << 24) | ((map.get(px).get(py) << 8) >> 8);
 		map.get(px).put(py, timesVisited);
-		// System.out.println(tVisited);
+		//System.out.println(tVisited);
 
 		for (int i = 0; i < 4; ++i) {
 			// posicion relativa de acuerdo a la direccion actual
 			int k = (4 + i - dr) % 4;
 			// puedo avanzar en esa direccion, no hay pared
 			boolean cond1 = !(Boolean) p.getAttribute(language.getPercept(k));
-			if (cond1) {
+			if (cond1 ) {
 				int x = px + dx[i];
 				int y = py + dy[i];
 				initMap(x, y);
@@ -176,7 +170,7 @@ public class TeseoBitA0 implements AgentProgram {
 		}
 		visit(p);
 		time++;
-		if (time % 40 == 0) {
+		if ( time % 40 == 0) {
 			if (time % 120 == 0) {
 				time = 0;
 				MAX_LEVEL += 2;
@@ -242,7 +236,7 @@ public class TeseoBitA0 implements AgentProgram {
 						vis.get(x).put(y, true);
 					}
 					structure.offer(nx.cloneWith(i, k));
-
+					
 				}
 			}
 
@@ -281,7 +275,7 @@ public class TeseoBitA0 implements AgentProgram {
 					ret.profit++;
 				}
 			}
-			// ret.profit -= map.get(px).get(py)>>24;
+			//ret.profit -= map.get(px).get(py)>>24;
 			for (int x = 0; x < k; ++x) {
 				ret.cmd.add(language.getAction(3));
 			}
