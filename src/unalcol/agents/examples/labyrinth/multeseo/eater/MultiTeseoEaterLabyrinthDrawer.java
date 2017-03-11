@@ -42,8 +42,7 @@ public class MultiTeseoEaterLabyrinthDrawer extends LabyrinthDrawer{
         Labyrinth   env = (Labyrinth)environment;
         int[] energy_level = ( (MultiTeseoEaterLabyrinth) environment).agent_energy_level;
         for( int i=0; i<env.agentsNumber(); i++){
-            Color e_color = energy_colors[energy_level[i] * (energy_colors.length - 1) /
-            TeseoEaterLabyrinth.MAX_ENERGY_LEVEL];
+            Color e_color = Color.black;//energy_colors[energy_level[i] * (energy_colors.length - 1) /TeseoEaterLabyrinth.MAX_ENERGY_LEVEL];
             g.setColor(e_color);
             SimulatedAgent agent = (SimulatedAgent)this.environment.getAgent(i);
             int x = ( (Integer) agent.getAttribute(Labyrinth.X)).intValue();
