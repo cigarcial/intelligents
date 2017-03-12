@@ -4,8 +4,8 @@ import unalcol.agents.Agent;
 import unalcol.agents.AgentProgram;
 import unalcol.agents.examples.labyrinth.Labyrinth;
 import unalcol.agents.examples.labyrinth.LabyrinthDrawer;
-import unalcol.agents.examples.labyrinth.teseo.simple.RandomReflexTeseo;
-import unalcol.agents.examples.labyrinth.teseo.unzero.Teseo0;
+import unalcol.agents.examples.labyrinth.multeseo.eater.CEM.TeseoBitA0;
+import unalcol.agents.examples.labyrinth.multeseo.eater.CEM.Tremaux;
 import unalcol.agents.simulate.util.SimpleLanguage;
 import unalcol.types.collection.vector.Vector;
 
@@ -21,8 +21,8 @@ public class MultiTeseoEaterMain {
 	     AgentProgram[] teseo = new AgentProgram[12];
 	    int index1 = 0;
 	    int index2 = 1;
-	    teseo[index1] = new RandomReflexTeseo( getLanguage() );
-	    teseo[index2] = new RandomReflexTeseo( getLanguage() );
+	    teseo[index1] = new TeseoBitA0( getLanguage() );
+	    teseo[index2] = new Tremaux( getLanguage() );
 	    
 	    LabyrinthDrawer.DRAW_AREA_SIZE = 600;
 	    LabyrinthDrawer.CELL_SIZE = 40;
