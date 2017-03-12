@@ -44,7 +44,8 @@ public class Tremaux implements AgentProgram {
 	public void init() {
 		cmd.clear();
 	}
-
+	
+	//esta función revisa si está en una posición con varias opciones de movimiento
 	public boolean division(boolean PF, boolean PD, boolean PA, boolean PI, boolean MT, boolean FAIL) {
 		if ((!PF && !PD) || (!PF && !PI) || (!PI && !PD) || (!PF && !PD && !PI)) {
 //			System.out.println("PF "  +PF+ " PD "+ PD + " PI " +PI);
@@ -53,7 +54,8 @@ public class Tremaux implements AgentProgram {
 		}
 		return false;
 	}
-
+	
+	//retorna cuantas veces ha sido visitada la posicion x y
 	public int vecesVisitado(int x, int y) {
 		int vecesVisitado = 0;
 		ArrayList<Integer> newPos = new ArrayList<Integer>() {
@@ -68,7 +70,8 @@ public class Tremaux implements AgentProgram {
 		}
 		return vecesVisitado;
 	}
-
+	
+	//retorna cuantas veces ha sido visitada la posición que se puede alcanzar desde el x y actual
 	private int vecesDireccionVisitada(String direccion) {
 
 		int nx = 0;
@@ -99,6 +102,7 @@ public class Tremaux implements AgentProgram {
 		return vecesVisitado(nx, ny);
 	}
 	
+	//selecciona el número de giros para moverse
 	public int selecNumGiro(String giro){
 		int num = 0;
 		switch (giro) {
@@ -143,14 +147,18 @@ public class Tremaux implements AgentProgram {
 			primerOpcion = new ArrayList<>();
 			segundaOpcion = new ArrayList<>();
 			tercerOpcion = new ArrayList<>();
-			// se revisa si estamos en una division con varios (minimo 2)
-			// caminos por tomar
+			
+			//si llega a la meta muere y se queda quieto :(
 			if(MT){
 				System.out.println(" llegué hijueputa xd");
 				cmd.add(language.getAction(0)); // die
 			}
+			// se revisa si estamos en una division con varios (minimo 2)
+						// caminos por tomar
 			else if (division(PF, PD, PA, PI, MT, FAIL)) {
 //				System.out.println("en division " +x +" "+y);
+				//si puede moverse a la izquierda revisa si la posición ha sido visitada cero, una 
+				//o dos o más veces, así con pared derecha y al frente
 				if (!PI) {
 
 					if (vecesDireccionVisitada(language.getPercept(3)) == 0) {
@@ -187,6 +195,8 @@ public class Tremaux implements AgentProgram {
 						tercerOpcion.add(language.getPercept(0));
 					}
 				}
+				//si ambas opciones de movimiento ya han sido visitadas una vez se 
+				//devuelve por donde vino
 				if (primerOpcion.size() == 0 && vecesVisitado(x, y) == 0){
 					for (int i = 0; i < 2; i++) {
 						cmd.add(language.getAction(3)); // rotate
@@ -206,12 +216,14 @@ public class Tremaux implements AgentProgram {
 				}
 
 			}else{
+				//si las 3 opciones hay pared (dead end) se devuelve
 				if(PF && PD && PI){
 					for (int i = 0; i < atras; i++) {
 						cmd.add(language.getAction(3)); // rotate
 						dr = (dr + 1) % 4;
 					} 
 				}else{
+					//si solo hay una pared para moverse se dirije ahí y se mueve
 					if(!PD){
 						for (int i = 0; i < derecha; i++) {
 							cmd.add(language.getAction(3)); // rotate
@@ -230,6 +242,7 @@ public class Tremaux implements AgentProgram {
 //			System.out.println(" 2 opcion " + segundaOpcion);
 //			System.out.println(" 3 opcion " + tercerOpcion);
 			
+			//si tiene más de una opción de movimiento con 0 visitas escoge al azar
 			if (primerOpcion.size() != 0){
 				int cantidad = primerOpcion.size();
 				int selec = random.nextInt(cantidad);
@@ -240,6 +253,7 @@ public class Tremaux implements AgentProgram {
 				}
 			}
 			else{
+				//si tiene más de una opción de movimiento con 1 visitas escoge al azar
 				if (segundaOpcion.size() != 0){
 					int cantidad = segundaOpcion.size();
 					int selec = random.nextInt(cantidad);
@@ -249,6 +263,9 @@ public class Tremaux implements AgentProgram {
 						dr = (dr + 1) % 4;
 					}
 				}
+				//si tiene más de una opción de movimiento con 2 visitas o más escoge 
+				//la de menos visitas
+				//esto hay que revisarlo bien porque tal vez daña un poco la implementación
 				else{
 					if (tercerOpcion.size() != 0){
 						/*int cantidad = tercerOpcion.size();
