@@ -127,14 +127,8 @@ public class CEMAgent implements AgentProgram {
 	private Point maxSearch(int[][] board,int lvl,boolean c){
 		
 		if( fullBoard(board) ){
-			return new Point(0,-1);
+			return new Point(10,-1);
 		}
-		
-		if( lvl >= 2 ){
-			int pf = eval(board,c)+(5-lvl);
-			return new Point(pf,-1);
-		}
-		
 		
 		int size = board.length;
 		Point best = new Point(Integer.MIN_VALUE,-1);
@@ -150,11 +144,18 @@ public class CEMAgent implements AgentProgram {
 				board[top][x] = 0;
 				return new Point(Integer.MAX_VALUE,x);
 			}
-			Point ac = minSearch(board,lvl+1,!c);
+			Point ac = null;
+			if( lvl+1 >= 4 ){
+				ac = new Point(eval(board,c),x);
+			}else{
+				ac = minSearch(board,lvl+1,!c);
+			}
 			
-			//Point ac = new Point(eval(board,c),x);
 			board[top][x] = 0;
 			if( best.getX() < ac.getX() ){
+				best = new Point((int)ac.getX(),x);
+			}
+			if( best.getX() == ac.getX() && Math.random() > 0.5 ){
 				best = new Point((int)ac.getX(),x);
 			}
 		}
@@ -168,10 +169,6 @@ public class CEMAgent implements AgentProgram {
 		if( fullBoard(board) ){
 			return new Point(0,-1);
 		}
-		if( lvl >= 2 ){
-			int pf = eval(board,c)+(5-lvl);
-			return new Point(pf,-1);
-		}
 		
 		int size = board.length;
 		Point best = new Point(Integer.MAX_VALUE,-1);
@@ -184,9 +181,18 @@ public class CEMAgent implements AgentProgram {
 				board[top][x] = 0;
 				return new Point(Integer.MIN_VALUE,x);
 			}
-			Point ac = maxSearch(board,lvl+1,!c);
+			Point ac = null;
+			if( lvl+1 >= 4 ){
+				ac = new Point(eval(board,c),x);
+			}else{
+				ac = maxSearch(board,lvl+1,!c);
+			}
+			
 			board[top][x] = 0;
 			if( best.getX() > ac.getX() ){
+				best = new Point((int)ac.getX(),x);
+			}
+			if( best.getX() == ac.getX() && Math.random() > 0.5 ){
 				best = new Point((int)ac.getX(),x);
 			}
 		}
