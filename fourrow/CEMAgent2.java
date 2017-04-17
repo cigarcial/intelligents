@@ -41,7 +41,7 @@ public class CEMAgent2 implements AgentProgram {
 			}
 			System.out.println("Warning at: " + x + ", " + y + "!!!");
 		}
-		return new Action( x + ":" + y + ":" + color);
+		return new Action(x + ":" + y + ":" + color);
 		// return randomAction(p);
 	}
 
@@ -142,7 +142,7 @@ public class CEMAgent2 implements AgentProgram {
 
 			board[top][x] = (c) ? 1 : 2;
 
-			if (gameSolved(board, top, x, c)) {
+			if (gameSolvedGeneral(board, top, x, c)) {
 				board[top][x] = 0;
 				return new Point(Integer.MAX_VALUE, x);
 			}
@@ -178,13 +178,13 @@ public class CEMAgent2 implements AgentProgram {
 				continue;
 			}
 			board[top][x] = (c) ? 1 : 2;
-			if (gameSolved(board, top, x, c)) {
+			if (gameSolvedGeneral(board, top, x, c)) {
 				board[top][x] = 0;
 				return new Point(Integer.MIN_VALUE, x);
 			}
 
 			Point ac = null;
-			if (lvl + 1 >= SEARCH_DEPTH ) {
+			if (lvl + 1 >= SEARCH_DEPTH) {
 				ac = new Point(eval(board, c), x);
 			} else {
 				ac = maxSearch(board, lvl + 1, !c);
@@ -201,19 +201,39 @@ public class CEMAgent2 implements AgentProgram {
 		return best;
 	}
 
+	private boolean gameSolvedGeneral(int[][] board, int i, int j, boolean c) {
+		int[] di = {-1,-1,-1,0,0,0,1,1,1};
+		int[] dj = {-1,0,1,-1,0,1,-1,0,1};
+		boolean ret = false;
+		for (int x = 0; x < di.length && !ret; ++x) {
+			int ii = i + di[x];
+			int jj = j + dj[x];
+			boolean c1 = ii >= 0 && ii < board.length;
+			boolean c2 = jj >= 0 && jj < board.length;
+			if (c1 && c2) {
+				ret = ret || gameSolved(board, ii, jj, c);
+			}
+		}
+		return ret;
+	}
+
 	private boolean gameSolved(int[][] board, int i, int j, boolean c) {
 		int t = (c) ? 1 : 2;
 		int size = board.length;
-		boolean izq, drc, abj, dai, dad;
-		izq = drc = abj = dai = dad = true;
+		boolean izq, drc, abj, dai, dad, dui, dud;
+		izq = drc = abj = dai = dad = dui = dud = true;
 		for (int x = 0; x < 4; ++x) {
 			izq = izq && j - x >= 0 && board[i][j - x] == t;
 			drc = drc && j + x < size && board[i][j + x] == t;
 			abj = abj && i + x < size && board[i + x][j] == t;
+
 			dai = dai && i + x < size && j - x >= 0 && board[i + x][j - x] == t;
 			dad = dad && i + x < size && j + x < size && board[i + x][j + x] == t;
+
+			dui = dui && i - x >= 0 && j - x >= 0 && board[i - x][j - x] == t;
+			dud = dud && i - x >= 0 && j + x < size && board[i - x][j + x] == t;
 		}
-		return izq || drc || abj || dai || dad;
+		return izq || drc || abj || dai || dad || dui || dud;
 	}
 
 	private boolean fullBoard(int[][] board) {
@@ -256,7 +276,7 @@ public class CEMAgent2 implements AgentProgram {
 				continue;
 			}
 			board[top][x] = (c) ? 1 : 2;
-			if (gameSolved(board, top, x, c)) {
+			if (gameSolvedGeneral(board, top, x, c)) {
 				board[top][x] = 0;
 				return new Point(top, x);
 			}
