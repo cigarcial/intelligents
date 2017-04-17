@@ -84,7 +84,7 @@ public class CEMFour implements AgentProgram {
 		int mejorColumna = -1;
 
 		if (siguientesJugadas.isEmpty() || depth == 0) {
-			System.out.println("evaluo");
+			//System.out.println("evaluo");
 			// System.out.println("depth 0");
 			// Fin del juego o profundidad alcanzada
 			puntaje = evaluar();
@@ -93,21 +93,21 @@ public class CEMFour implements AgentProgram {
 			for (int[] movimiento : siguientesJugadas) {
 				// probar el movimiento en el tablero
 				tablero[movimiento[0]][movimiento[1]] = (jugada.equals("black")) ? 1 : 2;
-				System.out.println(movimiento[0] + " " + movimiento[1] + " " + tablero[movimiento[0]][movimiento[1]]);
+				//System.out.println(movimiento[0] + " " + movimiento[1] + " " + tablero[movimiento[0]][movimiento[1]]);
 				if (jugada.equals(color)) { // yo maximizo
 					puntaje = minimax(depth - 1, (color.equals("white")) ? "black" : "white", alpha, beta)[0];
-					System.out.println("color: " + jugada + " puntaje: " + puntaje);
+					//System.out.println("color: " + jugada + " puntaje: " + puntaje);
 					if (puntaje > alpha) {
-						System.out.println("cambio de alpha");
+						//System.out.println("cambio de alpha");
 						alpha = puntaje;
 						mejorFila = movimiento[0];
 						mejorColumna = movimiento[1];
 					}
 				} else { // enemigo minimiza
 					puntaje = minimax(depth - 1, (color.equals("white")) ? "white" : "black", alpha, beta)[0];
-					System.out.println("color: " + jugada + " puntaje: " + puntaje);
+					//System.out.println("color: " + jugada + " puntaje: " + puntaje);
 					if (puntaje < beta) {
-						System.out.println("cambio de beta");
+						//System.out.println("cambio de beta");
 						beta = puntaje;
 						mejorFila = movimiento[0];
 						mejorColumna = movimiento[1];
@@ -119,7 +119,7 @@ public class CEMFour implements AgentProgram {
 				if (alpha >= beta)
 					break;
 			}
-			System.out.println("alpha " + alpha + " beta " + beta);
+			//System.out.println("alpha " + alpha + " beta " + beta);
 			return new int[] { (jugada.equals(color)) ? alpha : beta, mejorFila, mejorColumna };
 		}
 	}
@@ -127,7 +127,7 @@ public class CEMFour implements AgentProgram {
 	private int evaluar() {
 		int puntaje = 0;
 		puntaje += evalFilas();
-		// puntaje += evalColumnas();
+		puntaje += evalColumnas();
 		// puntaje += evalDiagonalAs();
 		// puntaje += evalDiagonalDes();
 		return puntaje;
@@ -265,71 +265,104 @@ public class CEMFour implements AgentProgram {
 	}
 
 	private int evalColumnas() {
-		int puntaje = 0;
+		//printTablero();
+		int total = 0;
 		for (int j = 0; j < tablero.length; j++) {
+			//ArrayList<Integer> puntajes = new ArrayList<>();
+			int puntaje = 0;
 			for (int i = tablero.length - 1; i >= 4; i--) {
-				if (tablero[i][j] == ((color.equals("black")) ? 1 : 2)) {
-					puntaje = 1;
-				} else if (tablero[i][j] == ((color.equals("black")) ? 2 : 1)) {
-					puntaje = -1;
-				}
-				if (tablero[i - 1][j] == ((color.equals("black")) ? 1 : 2)) {
-					if (puntaje == 1) { // celda1 mia
-						puntaje = 10;
-					} else if (puntaje == -1) { // celda1 oponente
-						return 0;
-					} else { // celda1 vacía
+				if (tablero[i][j] != 0) {
+					if (tablero[i][j] == ((color.equals("black")) ? 1 : 2)) {
 						puntaje = 1;
-					}
-				} else if (tablero[i - 1][j] == ((color.equals("black")) ? 2 : 1)) {
-					if (puntaje == -1) { // celda2 mia
-						puntaje = -10;
-					} else if (puntaje == 1) { // celda2 oponente
-						return 0;
-					} else { // celda2 vacía
+					} else if (tablero[i][j] == ((color.equals("black")) ? 2 : 1)) {
 						puntaje = -1;
+					} else {
+						puntaje = 0;
 					}
+					if (tablero[i - 1][j] == ((color.equals("black")) ? 1 : 2)) {
+						if (puntaje == 1) { // celda1 mia
+							puntaje = 10;
+						} else if (puntaje < 0) { // celda1 oponente
+							puntaje = 0;
+						} else { // celda1 vacía
+							puntaje = 1;
+						}
+					} else if (tablero[i - 1][j] == ((color.equals("black")) ? 2 : 1)) {
+						if (puntaje == -1) { // celda2 mia
+							puntaje = -10;
+						} else if (puntaje > 0) { // celda2 oponente
+							puntaje = 0;
+						} else { // celda2 vacía
+							puntaje = -1;
+						}
+					}
+					if (tablero[i - 2][j] == ((color.equals("black")) ? 1 : 2)) {
+						if (puntaje == 10) { // celda3 mia
+							puntaje = 100;
+						} else if (puntaje == 1) {
+							puntaje = 10;
+						} else if (puntaje < 0) { // celda3 oponente
+							puntaje = 0;
+						} else { // celda3 vacía
+							puntaje = 1;
+						}
+					} else if (tablero[i - 2][j] == ((color.equals("black")) ? 2 : 1)) {
+						if (puntaje == -10) { // celda3 mia
+							puntaje = -100;
+						} else if (puntaje == -1) {
+							puntaje = -10;
+						} else if (puntaje > 0) { // celda3 oponente
+							puntaje = 0;
+						} else { // celda3 vacía
+							puntaje = -1;
+						}
+					}
+
+					if (tablero[i - 3][j] == ((color.equals("black")) ? 1 : 2)) {
+						// System.out.println("posicion 4ta con blanco puntaje
+						// actual " + puntaje +";"+ tablero[i][j]+" "+
+						// tablero[i][j+1]+" "+ tablero[i][j+2]);
+						// System.out.println("posicion 1 con blanco 4 " +
+						// tablero[i][j]);
+						if (puntaje == 100) { // celda4 mia
+							puntaje = 1000;
+						} else if (puntaje == 10) { // celda3 mia
+							puntaje = 100;
+						} else if (puntaje == 1) {
+							puntaje = 10;
+						} else if (puntaje < 0) { // celda3 oponente
+							puntaje = 0;
+						} else { // celda3 vacía
+							puntaje = 1;
+						}
+						// System.out.println("puntaje despues de 4ta posicion "
+						// + puntaje);
+					} else if (tablero[i - 3][j] == ((color.equals("black")) ? 2 : 1)) {
+						if (puntaje == -100) { // celda4 mia
+							puntaje = -1000;
+						} else if (puntaje == -10) { // celda3 mia
+							puntaje = -100;
+						} else if (puntaje == -1) {
+							puntaje = -10;
+						} else if (puntaje > 0) { // celda3 oponente
+							puntaje = 0;
+						} else { // celda3 vacía
+							puntaje = -1;
+						}
+					}
+
+				} else {
+					break;
 				}
-				if (tablero[i - 2][j] == ((color.equals("black")) ? 1 : 2)) {
-					if (puntaje == 10) { // celda3 mia
-						puntaje = 100;
-					} else if (puntaje == -10) { // celda3 oponente
-						return 0;
-					} else { // celda3 vacía
-						puntaje = 1;
-					}
-				} else if (tablero[i - 2][j] == ((color.equals("black")) ? 2 : 1)) {
-					if (puntaje == -10) { // celda3 mia
-						puntaje = -100;
-					} else if (puntaje == 10) { // celda3 oponente
-						return 0;
-					} else { // celda3 vacía
-						puntaje = -1;
-					}
-				}
-				if (tablero[i - 3][j] == ((color.equals("black")) ? 1 : 2)) {
-					if (puntaje > 0) { // celda4 mia
-						puntaje *= 1000;
-					} else if (puntaje < 0) { // celda4 oponente
-						return 0;
-					} else { // celda4 vacía
-						puntaje = 1;
-					}
-				} else if (tablero[i - 3][j] == ((color.equals("black")) ? 2 : 1)) {
-					if (puntaje < 0) { // celda4 mia
-						puntaje *= 1000;
-					} else if (puntaje > 1) { // celda4 oponente
-						return 0;
-					} else { // celda4 vacía
-						puntaje = -1;
-					}
-				}
+				//puntajes.add(puntaje);
+				total += puntaje;
 
 			}
+			//System.out.println("puntajes " + puntajes);
 			// System.out.println("puntaje col " + puntaje+" "+j);
 		}
-
-		return puntaje;
+		//System.out.println("total " + total);
+		return total;
 	}
 
 	public boolean posibleDeCalcular(int i, int j) {
@@ -338,12 +371,12 @@ public class CEMFour implements AgentProgram {
 	}
 
 	private int evalFilas() {
-		printTablero();
+		// printTablero();
 
 		int total = 0;
 		for (int i = tablero.length - 1; i >= 0; i--) {
 			int puntaje = 0;
-			ArrayList<Integer> puntajes = new ArrayList<>();
+			// ArrayList<Integer> puntajes = new ArrayList<>();
 			for (int j = 0; j < tablero.length - 3; j++) {
 				if (posibleDeCalcular(i, j)) {
 					if (tablero[i][j] == ((color.equals("black")) ? 1 : 2)) {
@@ -424,22 +457,21 @@ public class CEMFour implements AgentProgram {
 						}
 					}
 				}
-				puntajes.add(puntaje);
+				// puntajes.add(puntaje);
 				total += puntaje;
 			}
 
-			System.out.println("puntajes " + puntajes);
-			
+			// System.out.println("puntajes " + puntajes);
 
 		}
-		System.out.println("total filas: " + total);
+		//System.out.println("total filas: " + total);
 		return total;
 	}
 
 	@Override
 	public Action compute(Percept p) {
 
-		long time = (long) (20 * Math.random());
+		long time = (long) (200 * Math.random());
 		try {
 			Thread.sleep(time);
 		} catch (Exception e) {
@@ -454,9 +486,9 @@ public class CEMFour implements AgentProgram {
 			if (p.getAttribute(n - 1 + ":" + n / 2).equals((String) FourInRow.SPACE)) {
 				return new Action(n - 1 + ":" + n / 2 + ":" + color);
 			} else {
-				result = minimax(2, color, Integer.MIN_VALUE, Integer.MAX_VALUE);
-				System.out.println("result---------------------------------------------");
-				System.out.println(result[0] + " " + result[1] + " " + result[2]);
+				result = minimax(3, color, Integer.MIN_VALUE, Integer.MAX_VALUE);
+				//System.out.println("result---------------------------------------------");
+				//System.out.println(result[0] + " " + result[1] + " " + result[2]);
 				// depth, max-turn, alpha, beta
 				/*
 				 * return new int[] {result[1], result[2]}; // row, col int i =
