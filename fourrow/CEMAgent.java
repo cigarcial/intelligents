@@ -21,18 +21,6 @@ public class CEMAgent implements AgentProgram {
 	}
 	
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	private Action nextAction(Percept p){
 		int n = Integer.parseInt((String)p.getAttribute(FourInRow.SIZE));
 		Point best = pureMinMax(p);
@@ -113,7 +101,7 @@ public class CEMAgent implements AgentProgram {
 		
 		Point best = maxSearch( board,0,color.equals((String)FourInRow.WHITE) );
 		
-		System.out.println(best);
+		//System.out.println(best);
 		
 		if(best.getY() < 0 || best.getY() >= n){
 			return new Point(-1,-1);
@@ -155,7 +143,7 @@ public class CEMAgent implements AgentProgram {
 			if( best.getX() < ac.getX() ){
 				best = new Point((int)ac.getX(),x);
 			}
-			if( best.getX() == ac.getX() && Math.random() > 0.5 ){
+			if( best.getX() == ac.getX() && Math.random() > 0.7 ){
 				best = new Point((int)ac.getX(),x);
 			}
 		}
@@ -181,18 +169,19 @@ public class CEMAgent implements AgentProgram {
 				board[top][x] = 0;
 				return new Point(Integer.MIN_VALUE,x);
 			}
+			
 			Point ac = null;
 			if( lvl+1 >= 4 ){
 				ac = new Point(eval(board,c),x);
 			}else{
 				ac = maxSearch(board,lvl+1,!c);
 			}
-			
 			board[top][x] = 0;
+			
 			if( best.getX() > ac.getX() ){
 				best = new Point((int)ac.getX(),x);
 			}
-			if( best.getX() == ac.getX() && Math.random() > 0.5 ){
+			if( best.getX() == ac.getX() && Math.random() > 0.7 ){
 				best = new Point((int)ac.getX(),x);
 			}
 		}
@@ -225,18 +214,7 @@ public class CEMAgent implements AgentProgram {
 		return ret;
 	}
 	
-	private int eval(int[][] board,boolean c){
-		int n = board.length;
-		int k = (c)? 1 : 2;
-		int ret = 0;
-		for(int x=0;x<n;++x){
-			for(int y=0;y<n;++y){
-				ret += (board[x][y] == k)? 1 : 0; 
-			}
-		}
-		return ret;
-	}
-	
+
 	
 	
 	
@@ -257,7 +235,21 @@ public class CEMAgent implements AgentProgram {
 		return -1;
 	}
 	
-
+	
+	
+	//mejorar esta funcion, da un poco de asco
+	private int eval(int[][] board,boolean c){
+		int n = board.length;
+		int k = (c)? 1 : 2;
+		int ret = 0;
+		for(int x=0;x<n;++x){
+			for(int y=0;y<n;++y){
+				ret += (board[x][y] == k)? 1 : 0; 
+			}
+		}
+		return ret;
+	}
+	
 	
 
 }
