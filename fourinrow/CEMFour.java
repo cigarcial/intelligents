@@ -132,16 +132,16 @@ public class CEMFour implements AgentProgram {
 		puntaje += evalFilas();
 		puntaje += evalColumnas();
 		 puntaje += evalDiagonalAs();
-		// puntaje += evalDiagonalDes();
+		puntaje += evalDiagonalDes();
 		return puntaje;
 	}
 
 	private boolean posibleDeCalcularDiaIzq(int i, int j) {
-		if(i+4< tablero.length -1 && j-4>=0){
+		if(i+4< tablero.length -1 && j-3>=0){
 			//System.out.println("dentro");
 		return (tablero[i + 1][j] != 0 && tablero[i + 2][j - 1] != 0
 				&& tablero[i + 3][j - 2] != 0 && tablero[i + 4][j - 3] != 0);
-		}else if(i ==  tablero.length -4 && j-4>=0){
+		}else if(i ==  tablero.length -4 && j-3>=0){
 			//System.out.println(" casi dentro");
 			return  (tablero[i + 1][j] != 0 && tablero[i + 2][j - 1] != 0
 					&& tablero[i + 3][j - 2] != 0);
@@ -150,18 +150,133 @@ public class CEMFour implements AgentProgram {
 			return false;
 		}
 	}
-	
+	private boolean posibleDeCalcularDiaDer(int i, int j) {
+		if(i+4< tablero.length -1 && j+3<tablero.length-1){
+			//System.out.println("dentro");
+		return (tablero[i + 1][j] != 0 && tablero[i + 2][j + 1] != 0
+				&& tablero[i + 3][j + 2] != 0 && tablero[i + 4][j + 3] != 0);
+		}else if(i ==  tablero.length -4 && j+3<tablero.length-1){
+			//System.out.println(" casi dentro");
+			return  (tablero[i + 1][j] != 0 && tablero[i + 2][j + 1] != 0
+					&& tablero[i + 3][j + 2] != 0);
+		}else{
+			//System.out.println("paila");
+			return false;
+		}
+	}
+private int evalDiagonalDes() {
+		
+		int total = 0;
+		//printTablero();
+		for (int i = 0; i < tablero.length-3; i++) {
+			ArrayList<Integer> puntajes = new ArrayList<>();
+			for (int j = 0; j < tablero.length-3; j++) {
+				int puntaje = 0;
+				//int i = k - j;
+				//System.out.println(posibleDeCalcularDiaIzq(i, j));
+				if (posibleDeCalcularDiaDer(i, j)) {
+					//printTablero();
+					//System.out.println("i: " + i + " j: " + j);
+					if (tablero[i][j] == ((color.equals("black")) ? 1 : 2)) {
+						puntaje = 1;
+					} else if (tablero[i][j] == ((color.equals("black")) ? 2 : 1)) {
+						puntaje = -1;
+					} else {
+						puntaje = 0;
+					}
+					if (tablero[i + 1][j + 1] == ((color.equals("black")) ? 1 : 2)) {
+						if (puntaje == 1) { // celda1 mia
+							puntaje = 10;
+						} else if (puntaje < 0) { // celda1 oponente
+							puntaje = 0;
+						} else { // celda1 vacía
+							puntaje = 1;
+						}
+					} else if (tablero[i + 1][j + 1] == ((color.equals("black")) ? 2 : 1)) {
+						if (puntaje == -1) { // celda2 mia
+							puntaje = -10;
+						} else if (puntaje > 0) { // celda2 oponente
+							puntaje = 0;
+						} else { // celda2 vacía
+							puntaje = -1;
+						}
+					}
+					if (tablero[i + 2][j + 2] == ((color.equals("black")) ? 1 : 2)) {
+						if (puntaje == 10) { // celda3 mia
+							puntaje = 100;
+						} else if (puntaje == 1) {
+							puntaje = 10;
+						} else if (puntaje < 0) { // celda3 oponente
+							puntaje = 0;
+						} else { // celda3 vacía
+							puntaje = 1;
+						}
+					} else if (tablero[i + 2][j + 2] == ((color.equals("black")) ? 2 : 1)) {
+						if (puntaje == -10) { // celda3 mia
+							puntaje = -100;
+						} else if (puntaje == -1) {
+							puntaje = -10;
+						} else if (puntaje > 0) { // celda3 oponente
+							puntaje = 0;
+						} else { // celda3 vacía
+							puntaje = -1;
+						}
+					}
+
+					if (tablero[i + 3][j + 3] == ((color.equals("black")) ? 1 : 2)) {
+						// System.out.println("posicion 4ta con blanco puntaje
+						// actual " + puntaje +";"+ tablero[i][j]+" "+
+						// tablero[i][j+1]+" "+ tablero[i][j+2]);
+						// System.out.println("posicion 1 con blanco 4 " +
+						// tablero[i][j]);
+						if (puntaje == 100) { // celda4 mia
+							puntaje = 1000;
+						} else if (puntaje == 10) { // celda3 mia
+							puntaje = 100;
+						} else if (puntaje == 1) {
+							puntaje = 10;
+						} else if (puntaje < 0) { // celda3 oponente
+							puntaje = 0;
+						} else { // celda3 vacía
+							puntaje = 1;
+						}
+						// System.out.println("puntaje despues de 4ta posicion "
+						// + puntaje);
+					} else if (tablero[i + 3][j + 3] == ((color.equals("black")) ? 2 : 1)) {
+						if (puntaje == -100) { // celda4 mia
+							puntaje = -1000;
+						} else if (puntaje == -10) { // celda3 mia
+							puntaje = -100;
+						} else if (puntaje == -1) {
+							puntaje = -10;
+						} else if (puntaje > 0) { // celda3 oponente
+							puntaje = 0;
+						} else { // celda3 vacía
+							puntaje = -1;
+						}
+					}
+
+				}
+				puntajes.add(puntaje);
+				total += puntaje;
+			}
+			//System.out.println("puntajes " + puntajes);
+		}
+		return total;
+	}
+
 	private int evalDiagonalAs() {
 		
 		int total = 0;
 		//printTablero();
-		for (int k = 3; k < tablero.length-1; k++) {
+		for (int i = 0; i < tablero.length-3; i++) {
 			ArrayList<Integer> puntajes = new ArrayList<>();
-			for (int j = 3, temp = 3; temp <= k; j++, temp++) {
+			for (int j = 3; j < tablero.length; j++) {
 				int puntaje = 0;
-				int i = k - j;
+				//int i = k - j;
 				//System.out.println(posibleDeCalcularDiaIzq(i, j));
 				if (posibleDeCalcularDiaIzq(i, j)) {
+					//printTablero();
 					//System.out.println("i: " + i + " j: " + j);
 					if (tablero[i][j] == ((color.equals("black")) ? 1 : 2)) {
 						puntaje = 1;
@@ -249,74 +364,6 @@ public class CEMFour implements AgentProgram {
 			//System.out.println("puntajes " + puntajes);
 		}
 		
-		/*
-		for (int k = tablero.length - 2; k >= 0; k--) {
-			for (int j = 0; j <= k; j++) {
-				int i = k - j;
-				if (tablero[tablero.length - j - 1][tablero.length - i - 1] == ((color.equals("black")) ? 1 : 2)) {
-					puntaje = 1;
-				} else if (tablero[tablero.length - j - 1][tablero.length - i - 1] == ((color.equals("black")) ? 2
-						: 1)) {
-					puntaje = -1;
-				}
-				if (tablero[tablero.length - j - 1][tablero.length - i - 1] == ((color.equals("black")) ? 1 : 2)) {
-					if (puntaje == 1) { // celda1 mia
-						puntaje = 10;
-					} else if (puntaje == -1) { // celda1 oponente
-						return 0;
-					} else { // celda1 vacía
-						puntaje = 1;
-					}
-				} else if (tablero[tablero.length - j - 1][tablero.length - i - 1] == ((color.equals("black")) ? 2
-						: 1)) {
-					if (puntaje == -1) { // celda2 mia
-						puntaje = -10;
-					} else if (puntaje == 1) { // celda2 oponente
-						return 0;
-					} else { // celda2 vacía
-						puntaje = -1;
-					}
-				}
-				if (tablero[tablero.length - j - 1][tablero.length - i - 1] == ((color.equals("black")) ? 1 : 2)) {
-					if (puntaje == 10) { // celda3 mia
-						puntaje = 100;
-					} else if (puntaje == -10) { // celda3 oponente
-						return 0;
-					} else { // celda3 vacía
-						puntaje = 1;
-					}
-				} else if (tablero[tablero.length - j - 1][tablero.length - i - 1] == ((color.equals("black")) ? 2
-						: 1)) {
-					if (puntaje == -10) { // celda3 mia
-						puntaje = -100;
-					} else if (puntaje == 10) { // celda3 oponente
-						return 0;
-					} else { // celda3 vacía
-						puntaje = -1;
-					}
-				}
-				if (tablero[tablero.length - j - 1][tablero.length - i - 1] == ((color.equals("black")) ? 1 : 2)) {
-					if (puntaje == 100) { // celda4 mia
-						puntaje = 1000;
-					} else if (puntaje == -100) { // celda4 oponente
-						return 0;
-					} else { // celda4 vacía
-						puntaje = 1;
-					}
-				} else if (tablero[tablero.length - j - 1][tablero.length - i - 1] == ((color.equals("black")) ? 2
-						: 1)) {
-					if (puntaje == -100) { // celda4 mia
-						puntaje = -1000;
-					} else if (puntaje == 100) { // celda4 oponente
-						return 0;
-					} else { // celda4 vacía
-						puntaje = -1;
-					}
-				}
-				
-			}
-			
-		}*/
 		return total;
 	}
 
