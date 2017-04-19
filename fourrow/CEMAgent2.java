@@ -13,7 +13,7 @@ public class CEMAgent2 implements AgentProgram {
 
 	private String color;
 	private boolean WARNING;
-	private int SEARCH_DEPTH = 6;
+	private int SEARCH_DEPTH = 4;
 
 	public CEMAgent2(String c) {
 		color = c;
@@ -23,8 +23,6 @@ public class CEMAgent2 implements AgentProgram {
 	private Action nextAction(Percept p) {
 		int n = Integer.parseInt((String) p.getAttribute(FourInRow.SIZE));
 		Point[] ret = pureMinMax(p);
-		// System.out.println(ret[0]);
-		// System.out.println(ret[1]);
 		int idx = 0;
 		if (ret[1] != null) {
 			idx = 1;
@@ -34,13 +32,6 @@ public class CEMAgent2 implements AgentProgram {
 		}
 		int x = (int) ret[idx].getX();
 		int y = (int) ret[idx].getY();
-		if (idx == 1) {
-			try {
-				Thread.sleep((long) (200 * Math.random()));
-			} catch (Exception e) {
-			}
-			System.out.println("Warning at: " + x + ", " + y + "!!!");
-		}
 		return new Action(x + ":" + y + ":" + color);
 		// return randomAction(p);
 	}
@@ -64,7 +55,7 @@ public class CEMAgent2 implements AgentProgram {
 		if (p.getAttribute(FourInRow.TURN).equals(color)) {
 			return nextAction(p);
 		}
-		return new Action(FourInRow.PASS);
+		return randomAction(p);
 		/*
 		 * }catch(Exception ex){ System.out.println("PANIC"); WARNING = true;
 		 * return randomAction(p); }
@@ -127,7 +118,7 @@ public class CEMAgent2 implements AgentProgram {
 	private Point maxSearch(int[][] board, int lvl, boolean c) {
 
 		if (fullBoard(board)) {
-			return new Point(10, -1);
+			return new Point(100, -1);
 		}
 
 		int size = board.length;
@@ -148,7 +139,7 @@ public class CEMAgent2 implements AgentProgram {
 			}
 			Point ac = null;
 			if (lvl + 1 >= SEARCH_DEPTH) {
-				ac = new Point(eval(board, c), x);
+				ac = new Point(eval0(board, c), x);
 			} else {
 				ac = minSearch(board, lvl + 1, !c);
 			}
@@ -185,7 +176,7 @@ public class CEMAgent2 implements AgentProgram {
 
 			Point ac = null;
 			if (lvl + 1 >= SEARCH_DEPTH) {
-				ac = new Point(eval(board, c), x);
+				ac = new Point(-eval0(board, c), x);
 			} else {
 				ac = maxSearch(board, lvl + 1, !c);
 			}
@@ -219,6 +210,10 @@ public class CEMAgent2 implements AgentProgram {
 
 	private boolean gameSolved(int[][] board, int i, int j, boolean c) {
 		int t = (c) ? 1 : 2;
+		int tc = (!c)? 1 : 2;
+		if( board[i][j] == 0 || board[i][j] == tc ){
+			return false;
+		}
 		int size = board.length;
 		boolean izq, drc, abj, dai, dad, dui, dud;
 		izq = drc = abj = dai = dad = dui = dud = true;
@@ -285,6 +280,46 @@ public class CEMAgent2 implements AgentProgram {
 
 		return null;
 
+	}
+	
+	private int eval0(int[][] board,boolean c){
+		int t = (c)? 1 : 2;
+		int size = board.length;
+		int ret = 0;
+		for(int x=0;x<size;++x){
+			for(int y=0;y<size;++y){
+				if(board[x][y] == 0){
+					ret += 2;
+				}else if( board[x][y] == t){
+					
+					int[] dx = {-1,-1,-1,0,0,1,1,1};
+					int[] dy = {-1,0,1,-1,1,-1,0,1};
+					
+					for(int j=0;j<dx.length;++j){
+						int pnt = 1;
+						for(int d=0;d<4;++d){
+							boolean c1 = x + d*dx[j] >= 0 && x + d*dx[j] < size;
+							boolean c2 = y + d*dy[j] >= 0 && y + d*dy[j] < size;
+							boolean c3 = c1 && c2 && board[x + d*dx[j] ][y + d*dy[j] ] == t;
+							boolean c4 = c1 && c2 && board[x + d*dx[j] ][y + d*dy[j] ] == 0;
+							if( c3 ){
+								pnt *= 10;
+							}else if( c4 ){
+								pnt *= 4;
+							}else{
+								pnt = 0;
+								break;
+							}
+						}
+						ret += pnt;
+					}
+						
+				}
+			}
+			
+		}
+		
+		return ret;
 	}
 
 }
