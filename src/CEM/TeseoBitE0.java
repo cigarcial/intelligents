@@ -11,43 +11,117 @@ import unalcol.agents.AgentProgram;
 import unalcol.agents.Percept;
 import unalcol.agents.simulate.util.SimpleLanguage;
 
-public class TeseoBitB0 implements AgentProgram{
+public class TeseoBitE0 implements AgentProgram {
 
-	private long initTime;
-	private long endTime;
-
+	// informacion de control o general del sistema
+	private long initTime, endTime;
 	private int SEARCH_TRIGGER = 50;
-
 	private int[] dx = { 0, 1, 0, -1 };
 	private int[] dy = { 1, 0, -1, 0 };
-	// si pudieramos ir entrenando para que se mueva de acuerdo a donde vaya
-	// encontrando mas posibilidades, uufff
-	// castigo el devolverme, la idea es ir para atras lo menor posible
-	private int[] pb = { 5, 5, 2, 5 };
-	int time = 0;
+
+	// informacion general de la exploracion
+	private int[] pb = { 6, 6, 2, 5 };
+	private int time = 0;
 
 	private LinkedList<String> cmd;
 	private Map<Point, Long> map;
 	private SimpleLanguage language;
 	private TeseoSearch search;
-
+	private Map<Integer, Boolean> foodRec;
 	// partimos del origen y vamos a construir el mapa de acuerdo a las
 	// siguientes normas
 	// de donde partimos supongamos que siempre estamos orientados al norte
 	// con eso dr nos mide 0 -> norte 1 -> oriente 2 -> sur 3 -> occidnete
-	int px = 0;
-	int py = 0;
-	int dr = 0;
-	
-	// implementacion de la comida, para ello vamos a suponer que partimos de una energia inicial 0 
-	// la idea es mantener la energia lo mas alejado de cero (hacia lo positivo)
+	private int px = 0;
+	private int py = 0;
+	private int dr = 0;
+	private int initialEnergy = -1;
+	private int previosEnergy;
 
-	public TeseoBitB0(SimpleLanguage l) {
+	// representacion en bit
+	// visitado paredes/agente
+	// bbbb b bb b b bbbb bbbb
+
+	public TeseoBitE0(SimpleLanguage l) {
 		language = l;
 		cmd = new LinkedList<String>();
 		map = new HashMap<Point, Long>();
 		search = new TeseoSearch(language, map);
+		foodRec = new HashMap<Integer, Boolean>();
 	}
+
+	@Override
+	public void init() {
+		cmd.clear();
+		initTime = System.currentTimeMillis();
+	}
+
+	/**
+	 * visita de nodo visita de nodo visita de nodo visita de nodo visita de
+	 * nodo visita de nodo visita de nodo visita de nodo
+	 */
+
+	private void visit(Percept p) {
+		Point position = new Point(px, py);
+		initMap(position);
+
+		// cuento el numero de veces que he visitado este punto
+		long tVisited = Math.min(128, (map.get(position) >> 24) + 1);
+
+		// System.out.println(tVisited);
+		long initValue = 0;
+		// reconocimiento de la comida
+		if ((Boolean) p.getAttribute(language.getPercept(10))) {
+			initValue = (1 << 9) | initValue;
+			for (int i = 0; i < 4; ++i) {
+				int val = ((Boolean) p.getAttribute(language.getPercept(11 + i))) ? 1 : 0;
+				initValue = (val << (10 + i)) | initValue;
+			}
+		}
+
+		// reconstruyo el estado de visitas de la casilla
+		for (int i = 0; i < 4; ++i) {
+			int val = ((1 << (4 + i) & map.get(position)) > 0) ? 1 : 0;
+			initValue = (val << (4 + i)) | initValue;
+		}
+
+		map.put(position, initValue);
+
+		for (int i = 0; i < 4; ++i) {
+			// posicion relativa de acuerdo a la direccion actual
+			int k = (4 + i - dr) % 4;
+
+			// hay un agente en esa direccion
+			boolean cond2 = (Boolean) p.getAttribute(language.getPercept(k + 6));
+			// puedo avanzar en esa direccion, no hay pared
+			boolean cond1 = !(Boolean) p.getAttribute(language.getPercept(k));
+
+			int kk = (cond1 && !cond2) ? 1 : 0;
+			int x = px + dx[i];
+			int y = py + dy[i];
+			Point nPosition = new Point(x, y);
+			initMap(nPosition);
+			// construyo la conexion entre mi posicion actual y mi vecino
+			long newKey = (kk) << i | map.get(position);
+			map.put(position, newKey);
+			// construyo la conexion entre mi vecino y mi posicion actual
+			newKey = (kk) << ((i + 2) % 4) | map.get(nPosition);
+			map.put(nPosition, newKey);
+		}
+		initValue = (tVisited << 24) | map.get(position);
+		map.put(position, initValue);
+	}
+
+	private void initMap(Point position) {
+		if (!map.containsKey(position)) {
+			map.put(position, (long) 0);
+		}
+	}
+
+	/**
+	 * visita de nodo visita de nodo visita de nodo visita de nodo visita de
+	 * nodo visita de nodo visita de nodo visita de nodo
+	 */
 
 	// la heuristica calcula cuantos vecinos tiene y cuantos ya he visitado
 	private int heuristic(Point position, int i, int k) {
@@ -74,7 +148,7 @@ public class TeseoBitB0 implements AgentProgram{
 		}
 		// por cada posible movimiento valido si me puedo mover y agrego a la
 		// lista de movimientos
-		int[] minMove = {Integer.MAX_VALUE,-1};
+		int[] minMove = { Integer.MAX_VALUE, -1 };
 		for (int i = 0; i < 4; ++i) {
 			// encuentro mi posicion relativa
 			int k = (4 + i - dr) % 4;
@@ -88,18 +162,20 @@ public class TeseoBitB0 implements AgentProgram{
 				for (int n = 0; n < t; ++n) {
 					pos[idx].add(k);
 				}
-				int times = (int)((map.get(position))>>24);	
-				if( idx == 2 && times < minMove[0] ){
+				// System.out.print(idx+" ");
+				int times = (int) ((map.get(position)) >> 24);
+				if (idx == 2 && times < minMove[0]) {
 					minMove[0] = times;
 					minMove[1] = k;
 				}
 			}
 		}
+		// System.out.println();
 		// no posible action (?)
 		if (pos[2].size() == 0 && pos[1].size() == 0 && pos[0].size() == 0) {
 			return new Action(language.getAction(0));
 		}
-		if( pos[0].size() == 0 && pos[1].size() == 0){
+		if (pos[0].size() == 0 && pos[1].size() == 0) {
 			for (int n = 0; n < minMove[1]; ++n) {
 				cmd.add(language.getAction(3));
 			}
@@ -120,51 +196,6 @@ public class TeseoBitB0 implements AgentProgram{
 		return nextAction();
 	}
 
-	private void initMap(Point position) {
-		if (!map.containsKey(position)) {
-			map.put(position, (long) 0);
-		}
-	}
-
-	private void visit(Percept p) {
-		Point position = new Point(px, py);
-		initMap(position);
-
-		// cuento el numero de veces que he visitado este punto
-		long tVisited = Math.min(128, (map.get(position) >> 24) + 1);
-
-		// System.out.println(tVisited);
-		map.put(position, (long) 0);
-		for (int i = 0; i < 4; ++i) {
-			// posicion relativa de acuerdo a la direccion actual
-			int k = (4 + i - dr) % 4;
-
-			boolean cond2 = (Boolean) p.getAttribute(language.getPercept(k + 6));
-			if (cond2) {
-				cmd.clear();
-				time *= SEARCH_TRIGGER;
-			}
-			// puedo avanzar en esa direccion, no hay pared
-			boolean cond1 = !(Boolean) p.getAttribute(language.getPercept(k));
-
-			int kk = (cond1 && !cond2) ? 1 : 0;
-			int x = px + dx[i];
-			int y = py + dy[i];
-			Point nPosition = new Point(x, y);
-			initMap(nPosition);
-			// construyo la conexion entre mi posicion actual y mi vecino
-			long newKey = (kk) << i | map.get(position);
-			map.put(position, newKey);
-			// construyo la conexion entre mi vecino y mi posicion actual
-			newKey = (kk) << ((i + 2) % 4) | map.get(nPosition);
-			map.put(nPosition, newKey);
-
-		}
-		long timesVisited = (tVisited << 24) | ((map.get(position) << 8) >> 8);
-		map.put(position, timesVisited);
-
-	}
-
 	private Action nextAction() {
 		String s = cmd.removeFirst();
 		// una rotacion
@@ -181,22 +212,19 @@ public class TeseoBitB0 implements AgentProgram{
 			int w = 4 + ((dr + 2) % 4);
 			newKey = (1 << w | map.get(position));
 			map.put(position, newKey);
+		} else if (s.equals(language.getAction(4))) {
+
 		}
 		return new Action(s);
 	}
 
-	
-	@Override
-	public void init() {
-		cmd.clear();
-	}
-
 	@Override
 	public Action compute(Percept p) {
-
-		if (initTime == 0) {
-			initTime = System.currentTimeMillis();
+		// verificaciones previas a la primera accion
+		if (initialEnergy == -1) {
+			initialEnergy = (Integer) p.getAttribute(language.getPercept(15));
 		}
+
 		if ((Boolean) p.getAttribute(language.getPercept(4))) {
 			if (endTime == 0) {
 				endTime = System.currentTimeMillis();
@@ -205,15 +233,35 @@ public class TeseoBitB0 implements AgentProgram{
 			}
 			return new Action(language.getAction(0));
 		}
+
 		visit(p);
 		time++;
+
+		if (criticalEnergy(p)) {
+			cmd = getFood();
+			return nextAction();
+		}
+
 		if (time % SEARCH_TRIGGER == 0) {
 			time = 0;
 			SEARCH_TRIGGER += 3;
-			cmd = search.searchCentinel(new Point(px,py), dr);
+			cmd = search.searchCentinel(new Point(px, py), dr);
 			return nextAction();
 		}
 		return explore();
+	}
+	
+	
+	public boolean criticalEnergy(Percept p){
+		int actualEnergy = (Integer)p.getAttribute(language.getPercept(15));
+		return ((1<<9) & map.get(new Point(px,py)) ) > 0 && actualEnergy - initialEnergy < -5 ; 
+	}
+	
+	private LinkedList<String> getFood(){
+		LinkedList<String> ret = new LinkedList<String>();
+		ret.add(language.getAction(4));
+		//food search
+		return ret;
 	}
 
 }
