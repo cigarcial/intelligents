@@ -15,7 +15,7 @@ import unalcol.agents.AgentProgram;
 import unalcol.agents.Percept;
 import unalcol.agents.simulate.util.SimpleLanguage;
 
-public class TeseoBitE0 implements AgentProgram {
+public class TeseoBitE2 implements AgentProgram {
 
 	// informacion de control o general del sistema
 	private long initTime, endTime;
@@ -30,7 +30,7 @@ public class TeseoBitE0 implements AgentProgram {
 	private LinkedList<String> cmd;
 	private Map<Point, Long> map;
 	private SimpleLanguage language;
-	private TeseoSearchV1 search;
+	private TeseoSearch search;
 	private Map<Integer, Boolean> foodRec;
 	// partimos del origen y vamos a construir el mapa de acuerdo a las
 	// siguientes normas
@@ -47,12 +47,12 @@ public class TeseoBitE0 implements AgentProgram {
 	// visitado paredes/agente
 	// bbbb b bb b b bbbb bbbb
 
-	public TeseoBitE0(SimpleLanguage l) {
+	public TeseoBitE2(SimpleLanguage l) {
 		language = l;
 		cmd = new LinkedList<String>();
 		map = new HashMap<Point, Long>();
+		search = new TeseoSearch(language, map);
 		foodRec = new HashMap<Integer, Boolean>();
-		search = new TeseoSearchV1(language, map,foodRec);
 		initialEnergy = previosEnergy = -100;
 	}
 
@@ -84,12 +84,6 @@ public class TeseoBitE0 implements AgentProgram {
 			}
 		}
 
-		// reconstruyo el estado de visitas de la casilla
-		for (int i = 0; i < 4; ++i) {
-			int val = ((1 << (4 + i) & map.get(position)) != 0) ? 1 : 0;
-			initValue = (val << (4 + i)) | initValue;
-		}
-
 		map.put(position, initValue);
 
 		for (int i = 0; i < 4; ++i) {
@@ -98,9 +92,7 @@ public class TeseoBitE0 implements AgentProgram {
 
 			// hay un agente en esa direccion
 			boolean cond2 = (Boolean) p.getAttribute(language.getPercept(k + 6));
-			System.out.println(i+", "+k+", "+language.getPercept(k+6)+", "+cond2);
 			if (cond2) {
-				//System.out.println("Agent found!!!");
 				cmd.clear();
 				time *= SEARCH_TRIGGER;
 			}
@@ -224,7 +216,6 @@ public class TeseoBitE0 implements AgentProgram {
 			newKey = (1 << w | map.get(position));
 			map.put(position, newKey);
 		}
-		System.out.println(s);
 		return new Action(s);
 	}
 
@@ -259,34 +250,22 @@ public class TeseoBitE0 implements AgentProgram {
 
 		visit(p);
 		time++;
-		int counter =  (int)(15 & map.get(new Point(px,py)));
-		System.out.println("none enter: "+counter);
-		if (eatOportunity(p) && time % SEARCH_TRIGGER != 0) {
-			System.out.println("eatOportunity enter");
-			cmd.clear();
-			cmd.add(language.getAction(4));
+
+		if (criticalEnergy(p)) {
+			cmd = getFood();
 			return nextAction();
-		}
-		
-		if( criticalEnergy(p) && time % SEARCH_TRIGGER != 0){
-			System.out.println("criticalEnergy enter");
-			cmd = search.searchCentinel(new Point(px,py), dr, (Integer)p.getAttribute(language.getPercept(15)),1);
-			if(cmd.size() != 0){
-				return nextAction();
-			}
 		}
 
 		if (time % SEARCH_TRIGGER == 0) {
-			System.out.println("searchTrigger enter");
-			System.out.println("Yo voy con tigo lola!!!");
 			time = 0;
 			SEARCH_TRIGGER += 3;
-			cmd = search.searchCentinel(new Point(px, py), dr,(Integer)p.getAttribute(language.getPercept(15)),0);
-			if(cmd.size() != 0){
-				return nextAction();
-			}else{
-				System.out.println("BAD SEARCH!!!!!!");
+			cmd = search.searchCentinel(new Point(px, py), dr);
+			System.out.println(cmd.size());
+			if (cmd.size() == 0) {
+				cmd.add(language.getAction(0));
+				System.out.println("BAD SEARCH!!");
 			}
+			return nextAction();
 		}
 		return explore();
 		/*
@@ -300,7 +279,7 @@ public class TeseoBitE0 implements AgentProgram {
 		return (int) ((map.get(new Point(px, py)) >> 4) & (long) 15);
 	}
 
-	public boolean eatOportunity(Percept p) {
+	public boolean criticalEnergy(Percept p) {
 		int foodCode = getFoodCode();
 		int actualEnergy = (Integer) p.getAttribute(language.getPercept(15));
 		boolean c1 = ((1 << 9) & map.get(new Point(px, py))) > 0;
@@ -315,10 +294,12 @@ public class TeseoBitE0 implements AgentProgram {
 		previosEnergy = actualEnergy;
 		return c1 & c2 && c3;
 	}
-	
-	private boolean criticalEnergy(Percept p){
-		int actualEnergy = (Integer)p.getAttribute(language.getPercept(15));
-		return actualEnergy < initialEnergy/2;
+
+	private LinkedList<String> getFood() {
+		LinkedList<String> ret = new LinkedList<String>();
+		ret.add(language.getAction(4));
+		// food search
+		return ret;
 	}
-	
+
 }

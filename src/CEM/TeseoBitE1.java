@@ -191,8 +191,8 @@ public class TeseoBitE1 implements AgentProgram{
 
 			boolean cond2 = (Boolean) p.getAttribute(language.getPercept(k + 6));
 			if (cond2) {
-				//cmd.clear();
-				//time *= SEARCH_TRIGGER;
+				cmd.clear();
+				time *= SEARCH_TRIGGER;
 			}
 			// puedo avanzar en esa direccion, no hay pared
 			boolean cond1 = !(Boolean) p.getAttribute(language.getPercept(k));
