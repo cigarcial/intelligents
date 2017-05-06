@@ -59,6 +59,7 @@ public class TeseoBitE0 implements AgentProgram {
 	@Override
 	public void init() {
 		cmd.clear();
+		previosEnergy = -100;
 	}
 
 	/**
@@ -82,7 +83,12 @@ public class TeseoBitE0 implements AgentProgram {
 				int val = ((Boolean) p.getAttribute(language.getPercept(11 + i))) ? 1 : 0;
 				initValue = (val << (10 + i)) | initValue;
 			}
+			
 		}
+		//System.out.println("New code: "+ ((initValue>>10)&15) );
+		
+		
+		
 
 		// reconstruyo el estado de visitas de la casilla
 		for (int i = 0; i < 4; ++i) {
@@ -98,7 +104,7 @@ public class TeseoBitE0 implements AgentProgram {
 
 			// hay un agente en esa direccion
 			boolean cond2 = (Boolean) p.getAttribute(language.getPercept(k + 6));
-			System.out.println(i+", "+k+", "+language.getPercept(k+6)+", "+cond2);
+			//System.out.println(i+", "+k+", "+language.getPercept(k+6)+", "+cond2);
 			if (cond2) {
 				//System.out.println("Agent found!!!");
 				cmd.clear();
@@ -173,7 +179,6 @@ public class TeseoBitE0 implements AgentProgram {
 				for (int n = 0; n < t; ++n) {
 					pos[idx].add(k);
 				}
-				// System.out.print(idx+" ");
 				int times = (int) ((map.get(position)) >> 24);
 				if (idx == 2 && times < minMove[0]) {
 					minMove[0] = times;
@@ -224,7 +229,7 @@ public class TeseoBitE0 implements AgentProgram {
 			newKey = (1 << w | map.get(position));
 			map.put(position, newKey);
 		}
-		System.out.println(s);
+		//System.out.println(s);
 		return new Action(s);
 	}
 
@@ -234,17 +239,17 @@ public class TeseoBitE0 implements AgentProgram {
 		// verificaciones previas a la primera accion
 		if (initialEnergy == -100) {
 			initialEnergy = (Integer) p.getAttribute(language.getPercept(15));
-
 			initTime = System.currentTimeMillis();
 		}
 		maxEnergy = Math.max(maxEnergy, (Integer) p.getAttribute(language.getPercept(15)));
 		//System.out.println(maxEnergy + ", " + (Integer) p.getAttribute(language.getPercept(15)));
-
+		//System.out.println(foodRec);
+		
 		if (previosEnergy != -100) {
-			boolean val = ((Integer) p.getAttribute(language.getPercept(15)) - previosEnergy) > -2;
-			// System.out.println((Integer)
-			// p.getAttribute(language.getPercept(15))+", "+previosEnergy);
-			foodRec.put(getFoodCode(), val);
+			boolean val = ((Integer) p.getAttribute(language.getPercept(15)) - previosEnergy) >= 0 ;
+			foodRec.put(getFoodCode(), val && foodRec.get(getFoodCode()));
+			//System.out.println(previosEnergy+"::::"+(Integer)p.getAttribute(language.getPercept(15)) );
+			//System.out.println(getFoodCode()+" "+val);
 			previosEnergy = -100;
 		}
 
@@ -259,33 +264,46 @@ public class TeseoBitE0 implements AgentProgram {
 
 		visit(p);
 		time++;
-		int counter =  (int)(15 & map.get(new Point(px,py)));
-		System.out.println("none enter: "+counter);
-		if (eatOportunity(p) && time % SEARCH_TRIGGER != 0) {
-			System.out.println("eatOportunity enter");
+		
+		
+		if( ((1 << 9) & map.get(new Point(px, py))) > 0 && eatOportunity(p)) {
+			//System.out.println("eatOportunity enter");
+			previosEnergy = (Integer)p.getAttribute(language.getPercept(15));
 			cmd.clear();
 			cmd.add(language.getAction(4));
 			return nextAction();
 		}
 		
-		if( criticalEnergy(p) && time % SEARCH_TRIGGER != 0){
-			System.out.println("criticalEnergy enter");
-			cmd = search.searchCentinel(new Point(px,py), dr, (Integer)p.getAttribute(language.getPercept(15)),1);
-			if(cmd.size() != 0){
-				return nextAction();
-			}
+		if( search.inSearch() ){
+			cmd.add(search.nextAction());
+			return nextAction();
 		}
 
-		if (time % SEARCH_TRIGGER == 0) {
-			System.out.println("searchTrigger enter");
-			System.out.println("Yo voy con tigo lola!!!");
-			time = 0;
-			SEARCH_TRIGGER += 3;
-			cmd = search.searchCentinel(new Point(px, py), dr,(Integer)p.getAttribute(language.getPercept(15)),0);
-			if(cmd.size() != 0){
-				return nextAction();
+		
+		
+		/*
+		if(  ){
+			System.out.println("criticalEnergy enter");
+			cmd.clear();
+			search.searchCentinel(new Point(px,py), dr, (Integer)p.getAttribute(language.getPercept(15)),1);
+			//System.out.println(cmd);
+			if(search.inSearch()){
+				return new Action(search.nextAction());
 			}else{
-				System.out.println("BAD SEARCH!!!!!!");
+				System.out.println("BAD FOOD SEARCH");
+			}
+		}*/
+
+		if (criticalEnergy(p) || time % SEARCH_TRIGGER == 0) {
+			//System.out.println("searchTrigger enter");
+			//System.out.println("Yo voy con tigo lola!!!");
+			time = 0;
+			//SEARCH_TRIGGER += 3;
+			cmd.clear();
+			search.searchCentinel(new Point(px, py), dr,(Integer)p.getAttribute(language.getPercept(15)),0);
+			if(search.inSearch()){
+				cmd.add(search.nextAction());
+				return nextAction();
 			}
 		}
 		return explore();
@@ -297,28 +315,28 @@ public class TeseoBitE0 implements AgentProgram {
 	}
 
 	public int getFoodCode() {
-		return (int) ((map.get(new Point(px, py)) >> 4) & (long) 15);
+		return (int) ( (map.get(new Point(px, py)) >> 10) & 15);
 	}
 
 	public boolean eatOportunity(Percept p) {
 		int foodCode = getFoodCode();
 		int actualEnergy = (Integer) p.getAttribute(language.getPercept(15));
-		boolean c1 = ((1 << 9) & map.get(new Point(px, py))) > 0;
-		boolean c2 = actualEnergy - initialEnergy < -5;
+		boolean c2 = (actualEnergy - initialEnergy < -2 || Math.random() < 0.6);
 		boolean c3 = actualEnergy < (initialEnergy + (Math.abs(maxEnergy - initialEnergy)) / 2);
-		if (c1 && Math.random() < 0.1 && foodRec.containsKey(foodCode)) {
-			return foodRec.containsKey(foodCode);
+		if( !foodRec.containsKey(foodCode) ){
+			if( c2 && Math.random() > 0.8 ){
+				System.err.println("NEW CODE");
+				foodRec.put(foodCode, true);
+				return true;
+			}
+			return false;
 		}
-		if (foodRec.containsKey(foodCode)) {
-			return c1 && c2 && c3 && foodRec.get(foodCode);
-		}
-		previosEnergy = actualEnergy;
-		return c1 & c2 && c3;
+		return foodRec.get(foodCode) && c2;
 	}
 	
 	private boolean criticalEnergy(Percept p){
 		int actualEnergy = (Integer)p.getAttribute(language.getPercept(15));
-		return actualEnergy < initialEnergy/2;
+		return actualEnergy < 2*initialEnergy/3;
 	}
 	
 }

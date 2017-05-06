@@ -20,12 +20,14 @@ public class TeseoSearchV1 {
 	private int MAX_LEVEL = 20;
 	private Language language;
 	Map<Point, Long> map;
-	Map<Integer,Boolean> foodRec;
+	Map<Integer, Boolean> foodRec;
+	LinkedList<String> cmd;
 
-	public TeseoSearchV1(Language l, Map<Point, Long> m,Map<Integer,Boolean> fr) {
+	public TeseoSearchV1(Language l, Map<Point, Long> m, Map<Integer, Boolean> fr) {
 		language = l;
 		map = m;
 		foodRec = fr;
+		cmd = null;
 	}
 
 	// BUSQUEDAS
@@ -39,9 +41,20 @@ public class TeseoSearchV1 {
 	// BUSQUEDAS
 	// BUSQUEDAS
 
-	public LinkedList<String> searchCentinel(Point p, int dr, int energyLevel,int type) {
-		System.out.println("New search: "+type);
-		if( type == 1){
+	public boolean inSearch() {
+		if (cmd != null && cmd.size() == 0) {
+			cmd = null;
+		}
+		return cmd != null;
+	}
+
+	public String nextAction() {
+		return cmd.removeFirst();
+	}
+
+	public LinkedList<String> searchCentinel(Point p, int dr, int energyLevel, int type) {
+		System.out.println("New search: " + type);
+		if (type == 1) {
 			return foodAsterisk(p, dr, energyLevel);
 		}
 		MAX_LEVEL += 2;
@@ -86,45 +99,11 @@ public class TeseoSearchV1 {
 			}
 
 		}
-		
-		return best.cmd;
-	}
-	
-	
-	public LinkedList<String> normalAsterisk(Point p, int dr, int energyLevel) {
 
-		NormalNode best = new NormalNode(new Point(-1, -1), -1, -1);
-		PriorityQueue<NormalNode> structure = new PriorityQueue<NormalNode>();
-		Map<Point, Boolean> vis = new HashMap<Point, Boolean>();
-
-		structure.add(new NormalNode(p, 0, dr));
-		vis.put(p, true);
-
-		while (structure.size() > 0) {
-			NormalNode nx = structure.poll();
-			best = best.getBetter(nx);
-			if (nx.cmd.size() >= (energyLevel-5)) {
-				continue;
-			}
-			for (int i = 0; i < 4; ++i) {
-
-				int k = (i + 4 - nx.dr) % 4;
-				int x = nx.pt.x + dx[i];
-				int y = nx.pt.y + dy[i];
-				Point ps = new Point(x, y);
-
-				initMap(new Point(x, y));
-				boolean noVis = !vis.containsKey(ps);
-				boolean reach = (1 << i & map.get(nx.pt)) != 0;
-				if (reach && noVis) {
-					vis.put(ps, true);
-					structure.offer(nx.cloneWith(i, k));
-				}
-			}
-
-		}
-		System.out.println(best.cmd);
-		return best.cmd;
+		this.cmd = best.cmd;
+		System.out.println(this.cmd);
+		System.out.println(best.profit);
+		return null;
 	}
 
 	// CLASE PARA LA BUSQUEDA
@@ -159,12 +138,12 @@ public class TeseoSearchV1 {
 					ret.profit++;
 				}
 			}
-			if( (1<<9 & map.get(ps) )  != 0  ){
-				int foodCode = (int)(map.get(ps)>>4 & 15); 
+			if ((1 << 9 & map.get(ps)) != 0) {
+				int foodCode = (int) (map.get(ps) >> 10 & 15);
 				boolean c1 = foodRec.containsKey(foodCode) && foodRec.get(foodCode);
-				profit += (c1)? 1000 : 0;
+				profit += (c1) ? 1000 : 0;
 			}
-			
+
 			// ret.profit -= map.get(px).get(py)>>24;
 			for (int x = 0; x < k; ++x) {
 				ret.cmd.add(language.getAction(3));
@@ -187,8 +166,43 @@ public class TeseoSearchV1 {
 
 	}
 
-	
-	
+	public LinkedList<String> normalAsterisk(Point p, int dr, int energyLevel) {
+
+		NormalNode best = new NormalNode(new Point(-1, -1), -1, -1);
+		PriorityQueue<NormalNode> structure = new PriorityQueue<NormalNode>();
+		Map<Point, Boolean> vis = new HashMap<Point, Boolean>();
+
+		structure.add(new NormalNode(p, 0, dr));
+		vis.put(p, true);
+
+		while (structure.size() > 0) {
+			NormalNode nx = structure.poll();
+			best = best.getBetter(nx);
+			if (nx.lvl >= MAX_LEVEL) {
+				continue;
+			}
+			for (int i = 0; i < 4; ++i) {
+
+				int k = (i + 4 - nx.dr) % 4;
+				int x = nx.pt.x + dx[i];
+				int y = nx.pt.y + dy[i];
+				Point ps = new Point(x, y);
+
+				initMap(new Point(x, y));
+				boolean noVis = !vis.containsKey(ps);
+				boolean reach = (1 << i & map.get(nx.pt)) != 0;
+				if (reach && noVis) {
+					vis.put(ps, true);
+					structure.offer(nx.cloneWith(i, k));
+				}
+			}
+
+		}
+		System.out.println(best.cmd);
+		this.cmd = best.cmd;
+		return null;
+	}
+
 	class NormalNode implements Comparable<NormalNode> {
 
 		private Point pt;
@@ -206,14 +220,26 @@ public class TeseoSearchV1 {
 			Point ps = new Point(this.pt.x + dx[i], this.pt.y + dy[i]);
 			NormalNode ret = new NormalNode(ps, this.lvl + 1, (this.dr + k) % 4);
 			ret.cmd = (LinkedList<String>) this.cmd.clone();
+			int mul = 1;
 			for (int j = 0; j < 4; ++j) {
 				boolean isNeig = (1 << j & map.get(ps)) != 0;
 				// ret.profit += ( isNeig )? 1 : 0;
 				boolean unvis = (1 << (j + 4) & map.get(ps)) == 0;
 				if (isNeig && unvis) {
-					ret.profit++;
+					ret.profit += 30*mul;
+					mul++;
 				}
 			}
+			if ((1 << 9 & map.get(ps)) > 0) {
+				int foodCode = (int) ((map.get(ps) >> 10) & 15);
+				if (!foodRec.containsKey(foodCode)) {
+					ret.profit += 6;
+				}
+				if (foodRec.containsKey(foodCode) && foodRec.get(foodCode)) {
+					ret.profit += 10;
+				}
+			}
+
 			// ret.profit -= map.get(px).get(py)>>24;
 			for (int x = 0; x < k; ++x) {
 				ret.cmd.add(language.getAction(3));
@@ -235,6 +261,5 @@ public class TeseoSearchV1 {
 		}
 
 	}
-	
 
 }
